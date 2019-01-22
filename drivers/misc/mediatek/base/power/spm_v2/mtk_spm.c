@@ -918,10 +918,8 @@ void *get_spm_firmware_version(uint32_t index)
 	}
 #endif
 
-	if (!dyna_load_pcm_done) {
-		dyna_load_pcm_progress = 1;
-		spm_load_pcm_firmware_nodev(LOAD_FW_BY_AEE);
-	}
+	if (!dyna_load_pcm_done)
+		spm_load_pcm_firmware_nodev();
 
 	if (dyna_load_pcm_done) {
 		if (index == 0) {
