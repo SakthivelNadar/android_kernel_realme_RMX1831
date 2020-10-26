@@ -349,9 +349,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
-		slp_debug("SPM FIRMWARE IS NOT READY\n");
-		return 0;
-//		goto LEAVE_SLEEP;
+		slp_error("SPM FIRMWARE IS NOT READY\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
 	}
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
