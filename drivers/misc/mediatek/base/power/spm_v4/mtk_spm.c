@@ -401,7 +401,7 @@ int spm_load_firmware_status(void)
 	if (local_spm_load_firmware_status == -1)
 		local_spm_load_firmware_status =
 			mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
-	return local_spm_load_firmware_status;
+	return 1;
 }
 
 static int spm_sleep_count_open(struct inode *inode, struct file *file)
