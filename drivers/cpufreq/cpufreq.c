@@ -380,10 +380,13 @@ return false;
 }
 
 static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
+static DEFINE_PER_CPU(unsigned long, max_freq_cpu);
 static DEFINE_PER_CPU(unsigned long, max_freq_scale) = SCHED_CAPACITY_SCALE;
+static DEFINE_PER_CPU(unsigned long, min_freq_scale);
 
 static void
-scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
+scale_freq_capacity(const cpumask_t *cpus, unsigned long cur_freq,
+		    unsigned long max_freq)
 {
 	unsigned long cur = freqs ? freqs->new : policy->cur;
 	unsigned long scale;
@@ -441,16 +444,37 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 			arch_scale_set_curr_freq(cpu, cur);
 		}
 	}
+	unsigned long scale = (cur_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+	int cpu;
 
-	if (freqs)
+	for_each_cpu(cpu, cpus) {
+		per_cpu(freq_scale, cpu) = scale;
+		per_cpu(max_freq_cpu, cpu) = max_freq;
+	}
+
+	pr_debug("cpus %*pbl cur freq/max freq %lu/%lu kHz freq scale %lu\n",
+		 cpumask_pr_args(cpus), cur_freq, max_freq, scale);
+}
+
+unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	return per_cpu(freq_scale, cpu);
+}
+
+static void
+scale_max_freq_capacity(const cpumask_t *cpus, unsigned long policy_max_freq)
+{
+	unsigned long scale, max_freq;
+	int cpu = cpumask_first(cpus);
+
+	if (cpu >= nr_cpu_ids)
 		return;
 #endif
 
-	scale = (policy->max << SCHED_CAPACITY_SHIFT) / cpuinfo->max_freq;
+	max_freq = per_cpu(max_freq_cpu, cpu);
 
-	pr_debug("cpus %*pbl cur max/max freq %u/%u kHz max freq scale %lu\n",
-		 cpumask_pr_args(policy->cpus), policy->max, cpuinfo->max_freq,
-		 scale);
+	if (!max_freq)
+		return;
 
 #ifdef CONFIG_HOTPLUG_CPU
 	for_each_cpu(cpu, &cls_cpus)
@@ -465,13 +489,46 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
 {
-	return per_cpu(freq_scale, cpu);
+	return per_cpu(max_freq_scale, cpu);
 }
 #endif
-
-unsigned long cpufreq_scale_max_freq_capacity(int cpu)
 {
-	return per_cpu(max_freq_scale, cpu);
+        scale = (policy_max_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+
+        for_each_cpu(cpu, cpus)
+                per_cpu(max_freq_scale, cpu) = scale;
+
+        pr_debug("cpus %*pbl policy max freq/max freq %lu/%lu kHz max freq scale %lu\n",
+                 cpumask_pr_args(cpus), policy_max_freq, max_freq, scale);
+}
+
+unsigned long cpufreq_scale_max_freq_capacity(struct sched_domain *sd, int cpu)
+static void
+scale_min_freq_capacity(const cpumask_t *cpus, unsigned long policy_min_freq)
+{
+	unsigned long scale, max_freq;
+	int cpu = cpumask_first(cpus);
+
+	if (cpu >= nr_cpu_ids)
+		return;
+
+	max_freq = per_cpu(max_freq_cpu, cpu);
+
+	if (!max_freq)
+		return;
+
+	scale = (policy_min_freq << SCHED_CAPACITY_SHIFT) / max_freq;
+
+	for_each_cpu(cpu, cpus)
+		per_cpu(min_freq_scale, cpu) = scale;
+
+	pr_debug("cpus %*pbl policy min freq/max freq %lu/%lu kHz min freq scale %lu\n",
+		 cpumask_pr_args(cpus), policy_min_freq, max_freq, scale);
+}
+
+unsigned long cpufreq_scale_min_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	return per_cpu(min_freq_scale, cpu);
 }
 
 static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
@@ -578,7 +635,11 @@ wait:
 
 	spin_unlock(&policy->transition_lock);
 
-	scale_freq_capacity(policy, freqs);
+	scale_freq_capacity(policy->cpus, freqs->new, policy->cpuinfo.max_freq);
+#ifdef CONFIG_SMP
+	for_each_cpu(cpu, policy->cpus)
+		trace_cpu_capacity(capacity_curr_of(cpu), cpu);
+#endif
 
 	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
 }
@@ -2298,7 +2359,8 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_NOTIFY, new_policy);
 
-	scale_freq_capacity(new_policy, NULL);
+	scale_max_freq_capacity(policy->cpus, policy->max);
+	scale_min_freq_capacity(policy->cpus, policy->min);
 
 	policy->min = new_policy->min;
 	policy->max = new_policy->max;
