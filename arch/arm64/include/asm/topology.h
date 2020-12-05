@@ -41,6 +41,16 @@ extern int arch_better_capacity(unsigned int cpu);
 
 #ifdef CONFIG_MTK_CPU_TOPOLOGY
 void arch_build_cpu_topology_domain(void);
+struct sched_domain;
+#endif
+
+#ifdef CONFIG_CPU_FREQ
+#define arch_scale_freq_capacity cpufreq_scale_freq_capacity
+extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
+#define arch_scale_max_freq_capacity cpufreq_scale_max_freq_capacity
+extern unsigned long cpufreq_scale_max_freq_capacity(struct sched_domain *sd, int cpu);
+#define arch_scale_min_freq_capacity cpufreq_scale_min_freq_capacity
+extern unsigned long cpufreq_scale_min_freq_capacity(struct sched_domain *sd, int cpu);
 #endif
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
