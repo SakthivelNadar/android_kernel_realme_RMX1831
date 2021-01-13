@@ -18,6 +18,14 @@
 
 #include "power.h"
 
+#ifdef VENDOR_EDIT
+/* Bin.Li@EXP.BSP.bootloader.bootflow, 2017/05/24, Add for interface reboot reason */
+static char *boot_mode;
+extern u16  is_kernel_panic_reboot(void);
+extern void  hal_rtc_clear_spar0_bit8(void);
+static int first_in = 0;
+#endif
+
 DEFINE_MUTEX(pm_mutex);
 
 #ifdef CONFIG_PM_SLEEP
@@ -38,11 +46,18 @@ int unregister_pm_notifier(struct notifier_block *nb)
 }
 EXPORT_SYMBOL_GPL(unregister_pm_notifier);
 
-int pm_notifier_call_chain(unsigned long val)
+int __pm_notifier_call_chain(unsigned long val, int nr_to_call, int *nr_calls)
 {
-	int ret = blocking_notifier_call_chain(&pm_chain_head, val, NULL);
+	int ret;
+
+	ret = __blocking_notifier_call_chain(&pm_chain_head, val, NULL,
+						nr_to_call, nr_calls);
 
 	return notifier_to_errno(ret);
+}
+int pm_notifier_call_chain(unsigned long val)
+{
+	return __pm_notifier_call_chain(val, -1, NULL);
 }
 
 /* If set, devices may be suspended and resumed asynchronously. */
@@ -357,6 +372,9 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 	suspend_state_t state;
 	int error;
 
+	/* force check wakelock after echo mem > /sys/power/state */
+	events_check_enabled = true;
+
 	error = pm_autosleep_lock();
 	if (error)
 		return error;
@@ -599,6 +617,37 @@ power_attr(pm_freeze_timeout);
 
 #endif	/* CONFIG_FREEZER*/
 
+#ifdef VENDOR_EDIT
+/* Bin.Li@EXP.BSP.bootloader.bootflow, 2017/05/24, Add for interface reboot reason */
+static ssize_t app_boot_show(struct kobject *kobj, struct kobj_attribute *attr,
+		char *buf)
+{
+
+	if(first_in == 0)
+	{
+
+		if(is_kernel_panic_reboot())
+		{
+			boot_mode = "kernel";
+			hal_rtc_clear_spar0_bit8();
+		}
+		else
+		{
+			boot_mode = "normal";
+		}
+		first_in = 1;
+	}
+	return sprintf(buf, "%s", boot_mode);
+}
+
+static ssize_t app_boot_store(struct kobject *kobj, struct kobj_attribute *attr,
+        const char *buf, size_t n)
+{
+    return 0;
+}
+power_attr(app_boot);
+#endif /* VENDOR_EDIT */
+
 static struct attribute * g[] = {
 	&state_attr.attr,
 #ifdef CONFIG_PM_TRACE
@@ -626,6 +675,10 @@ static struct attribute * g[] = {
 #ifdef CONFIG_FREEZER
 	&pm_freeze_timeout_attr.attr,
 #endif
+#ifdef VENDOR_EDIT
+/* Bin.Li@EXP.BSP.bootloader.bootflow, 2017/05/24, Add for interface reboot reason */
+	&app_boot_attr.attr,
+#endif /* VENDOR_EDIT */
 	NULL,
 };
 

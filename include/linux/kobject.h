@@ -29,7 +29,12 @@
 #include <linux/workqueue.h>
 
 #define UEVENT_HELPER_PATH_LEN		256
+#ifdef VENDOR_EDIT
+/* Qiao.Hu@BSP.BaseDrv.CHG.Basic, 2018/02/07, modify for cts*/
+#define UEVENT_NUM_ENVP			64	/* number of env pointers */
+#else
 #define UEVENT_NUM_ENVP			32	/* number of env pointers */
+#endif
 #define UEVENT_BUFFER_SIZE		2048	/* buffer for the variables */
 
 #ifdef CONFIG_UEVENT_HELPER

@@ -18,6 +18,7 @@
 #include <linux/utsname.h>
 #include <trace/events/sched.h>
 
+
 /*
  * The number of tasks checked:
  */
@@ -81,7 +82,7 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
 	 * Also, skip vfork and any other user process that freezer should skip.
 	 */
 	if (unlikely(t->flags & (PF_FROZEN | PF_FREEZER_SKIP)))
-	    return;
+		return;
 
 	/*
 	 * When a freshly created task is scheduled once, changes its state to
@@ -97,6 +98,8 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
 	}
 
 	trace_sched_process_hang(t);
+
+
 
 	if (!sysctl_hung_task_warnings)
 		return;
@@ -178,7 +181,9 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
 				goto unlock;
 		}
 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
+
 		if (t->state == TASK_UNINTERRUPTIBLE)
+
 			check_hung_task(t, timeout);
 	}
  unlock:

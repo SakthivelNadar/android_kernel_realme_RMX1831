@@ -64,7 +64,6 @@ config MIPS
 	select HAVE_IRQ_TIME_ACCOUNTING
 	select GENERIC_TIME_VSYSCALL
 	select ARCH_CLOCKSOURCE_DATA
-	select HAVE_REGS_AND_STACK_ACCESS_API
 
 menu "Machine selection"
 
@@ -2987,7 +2986,6 @@ config MIPS32_N32
 config BINFMT_ELF32
 	bool
 	default y if MIPS32_O32 || MIPS32_N32
-	select ELFCORE
 
 endmenu
 

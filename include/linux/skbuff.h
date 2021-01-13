@@ -141,7 +141,7 @@
 /* Maximum value in skb->csum_level */
 #define SKB_MAX_CSUM_LEVEL	3
 
-#define SKB_DATA_ALIGN(X)	ALIGN(X, SMP_CACHE_BYTES)
+#define SKB_DATA_ALIGN(X)	ALIGN(X, 64)
 #define SKB_WITH_OVERHEAD(X)	\
 	((X) - SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
 #define SKB_MAX_ORDER(X, ORDER) \
@@ -3249,7 +3249,13 @@ static inline __sum16 __skb_checksum_validate_complete(struct sk_buff *skb,
 
 	skb->csum = psum;
 
-	if (complete || skb->len <= CHECKSUM_BREAK) {
+#ifndef VENDOR_EDIT
+    //Wei.Wang@Connectivity.WiFi.Network.internet.1015237, 2017/05/30,
+    //Modify for [1015237] avoid sending wrong data to app
+    if (complete || skb->len <= CHECKSUM_BREAK) {
+#else /* VENDOR_EDIT */
+    if (complete) {
+#endif /* VENDOR_EDIT */
 		__sum16 csum;
 
 		csum = __skb_checksum_complete(skb);

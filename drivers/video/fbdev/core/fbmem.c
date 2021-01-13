@@ -1200,7 +1200,10 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		console_unlock();
 		break;
 	case FBIOBLANK:
+		#ifndef CONFIG_OPPO_SPECIAL_BUILD
+		/* LiPing-M@PSW.MM.Display.LCD.Stability,bugid:1254790,2018/1/30,Delete for lcd suspend stability */
 		console_lock();
+		#endif /* CONFIG_OPPO_SPECIAL_BUILD */
 		if (!lock_fb_info(info)) {
 			console_unlock();
 			return -ENODEV;
@@ -1209,7 +1212,10 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = fb_blank(info, arg);
 		info->flags &= ~FBINFO_MISC_USEREVENT;
 		unlock_fb_info(info);
+		#ifndef CONFIG_OPPO_SPECIAL_BUILD
+		/* LiPing-M@PSW.MM.Display.LCD.Stability,bugid:1254790,2018/1/30,Delete for lcd suspend stability */
 		console_unlock();
+		#endif /* CONFIG_OPPO_SPECIAL_BUILD */
 		break;
 	default:
 		if (!lock_fb_info(info))

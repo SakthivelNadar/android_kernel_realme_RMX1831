@@ -50,6 +50,7 @@ int reboot_force;
 
 void (*pm_power_off_prepare)(void);
 
+
 /**
  *	emergency_restart - reboot the system
  *
@@ -263,6 +264,7 @@ void kernel_power_off(void)
 	syscore_shutdown();
 	pr_emerg("Power down\n");
 	kmsg_dump(KMSG_DUMP_POWEROFF);
+
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);

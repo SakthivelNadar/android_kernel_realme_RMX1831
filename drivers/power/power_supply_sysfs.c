@@ -45,10 +45,10 @@ static ssize_t power_supply_show_property(struct device *dev,
 					  char *buf) {
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB",
-		"USB_DCP", "USB_CDP", "USB_ACA"
+		"USB_DCP", "USB_CDP", "USB_ACA", "Wireless"
 	};
 	static char *status_text[] = {
-		"Unknown", "Charging", "Discharging", "Not charging", "Full"
+		"Unknown", "Charging", "Discharging", "Not charging", "Full", "Cmd discharging"
 	};
 	static char *charge_type[] = {
 		"Unknown", "N/A", "Trickle", "Fast"
@@ -106,7 +106,10 @@ static ssize_t power_supply_show_property(struct device *dev,
 	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
 		return sprintf(buf, "%s\n", value.strval);
 
-	return sprintf(buf, "%d\n", value.intval);
+	if (off == POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT)
+		return sprintf(buf, "%lld\n", value.int64val);
+	else
+		return sprintf(buf, "%d\n", value.intval);
 }
 
 static ssize_t power_supply_store_property(struct device *dev,
@@ -135,6 +138,23 @@ static ssize_t power_supply_store_property(struct device *dev,
 /* Must be in the same order as POWER_SUPPLY_PROP_* */
 static struct device_attribute power_supply_attrs[] = {
 	/* Properties of type `int' */
+	#ifdef VENDOR_EDIT
+	/* Qiao.Hu@BSP.BaseDrv.CHG.Basic, 2017/11/19, Add for charging */
+	POWER_SUPPLY_ATTR(authenticate),
+	POWER_SUPPLY_ATTR(charge_timeout),
+	POWER_SUPPLY_ATTR(battery_request_poweroff),
+	POWER_SUPPLY_ATTR(mmi_charging_enable),
+	POWER_SUPPLY_ATTR(stop_charging_enable),
+	POWER_SUPPLY_ATTR(otg_switch),
+	POWER_SUPPLY_ATTR(otg_online),
+	POWER_SUPPLY_ATTR(batt_fcc),
+	POWER_SUPPLY_ATTR(batt_soh),
+	POWER_SUPPLY_ATTR(batt_cc),
+	POWER_SUPPLY_ATTR(batt_rm),
+	POWER_SUPPLY_ATTR(notify_code),
+	POWER_SUPPLY_ATTR(charger_ic),
+	#endif /* VENDOR_EDIT */
+
 	POWER_SUPPLY_ATTR(status),
 	POWER_SUPPLY_ATTR(charge_type),
 	POWER_SUPPLY_ATTR(health),
@@ -197,6 +217,49 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(scope),
 	POWER_SUPPLY_ATTR(charge_term_current),
 	POWER_SUPPLY_ATTR(calibrate),
+	/* Local extensions */
+	POWER_SUPPLY_ATTR(usb_hc),
+	POWER_SUPPLY_ATTR(usb_otg),
+	POWER_SUPPLY_ATTR(charge_enabled),
+	/* Local extensions of type int64_t */
+	POWER_SUPPLY_ATTR(charge_counter_ext),
+	/* 20100723 James Lo */
+	POWER_SUPPLY_ATTR(batt_vol),
+	POWER_SUPPLY_ATTR(batt_temp),
+	/* 20100405 Add for EM */
+	POWER_SUPPLY_ATTR(TemperatureR),
+	POWER_SUPPLY_ATTR(TempBattVoltage),
+	POWER_SUPPLY_ATTR(InstatVolt),
+	POWER_SUPPLY_ATTR(BatteryAverageCurrent),
+	POWER_SUPPLY_ATTR(BatterySenseVoltage),
+	POWER_SUPPLY_ATTR(ISenseVoltage),
+	POWER_SUPPLY_ATTR(ChargerVoltage),
+	/* Dual battery */
+	POWER_SUPPLY_ATTR(status_smb),
+	POWER_SUPPLY_ATTR(capacity_smb),
+	POWER_SUPPLY_ATTR(present_smb),
+	/* ADB CMD Discharging */
+	POWER_SUPPLY_ATTR(adjust_power),
+
+	#ifdef VENDOR_EDIT
+	/* ChaoYing.Chen@EXP.BSP.CHG.basic, 2017/05/16, Add for capacity node */
+	POWER_SUPPLY_ATTR(internal_capacity),
+	#endif  /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	/* ChaoYing.Chen@EXP.BSP.CHG.basic, 2017/05/16, Add for chargeid voltage */
+	POWER_SUPPLY_ATTR(chargerid_volt),
+	#endif  /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	/* ChaoYing.Chen@EXP.BSP.CHG.basic, 2017/05/16, Add for critical log */
+	POWER_SUPPLY_ATTR(primal_type),
+	#endif /* VENDOR_EDIT */
+
+	#ifdef CONFIG_OPPO_CALL_MODE_SUPPORT
+	/* ChaoYing.Chen@EXP.BSP.CHG.basic, 2017/05/16, Add for calling */
+	POWER_SUPPLY_ATTR(call_mode),
+	#endif /* VENDOR_EDIT */
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),

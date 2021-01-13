@@ -708,7 +708,6 @@ asmlinkage void do_ov(struct pt_regs *regs)
 int process_fpemu_return(int sig, void __user *fault_addr, unsigned long fcr31)
 {
 	struct siginfo si = { 0 };
-	struct vm_area_struct *vma;
 
 	switch (sig) {
 	case 0:
@@ -749,8 +748,7 @@ int process_fpemu_return(int sig, void __user *fault_addr, unsigned long fcr31)
 		si.si_addr = fault_addr;
 		si.si_signo = sig;
 		down_read(&current->mm->mmap_sem);
-		vma = find_vma(current->mm, (unsigned long)fault_addr);
-		if (vma && (vma->vm_start <= (unsigned long)fault_addr))
+		if (find_vma(current->mm, (unsigned long)fault_addr))
 			si.si_code = SEGV_ACCERR;
 		else
 			si.si_code = SEGV_MAPERR;

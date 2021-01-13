@@ -53,6 +53,9 @@
 #include <linux/oom.h>
 #include <linux/writeback.h>
 #include <linux/shm.h>
+#include <linux/kcov.h>
+
+#include "sched/tune.h"
 
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
@@ -260,6 +263,8 @@ static bool has_stopped_jobs(struct pid *pgrp)
 
 	return false;
 }
+
+
 
 /*
  * Check to see if any process groups have become orphaned as
@@ -652,11 +657,14 @@ static inline void check_stack_usage(void) {}
 
 void do_exit(long code)
 {
+
 	struct task_struct *tsk = current;
 	int group_dead;
+
 	TASKS_RCU(int tasks_rcu_i);
 
 	profile_task_exit(tsk);
+	kcov_task_exit(tsk);
 
 	WARN_ON(blk_needs_flush_plug(tsk));
 
@@ -677,6 +685,7 @@ void do_exit(long code)
 	ptrace_event(PTRACE_EVENT_EXIT, code);
 
 	validate_creds_for_do_exit(tsk);
+
 
 	/*
 	 * We're taking recursive faults here in do_exit. Safest is to just
@@ -699,6 +708,9 @@ void do_exit(long code)
 	}
 
 	exit_signals(tsk);  /* sets PF_EXITING */
+
+	schedtune_exit_task(tsk);
+
 	/*
 	 * tsk->flags are checked in the futex code to protect against
 	 * an exiting task cleaning up the robust pi futexes.

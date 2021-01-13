@@ -425,7 +425,15 @@ config CHARGER_BQ24257
 	help
 	  Say Y to enable support for the TI BQ24250, BQ24251, and BQ24257 battery
 	  chargers.
-
+#ifdef VENDOR_EDIT
+#/* Qiao.Hu@BSP.BaseDrv.CHG.Basic, 2017/12/09, Add for call mode */
+config OPPO_CALL_MODE_SUPPORT
+	tristate "TI call mode support"
+	depends on I2C
+	depends on GPIOLIB || COMPILE_TEST
+	help
+	  Say Y to enable support for the TI call mode.
+#endif
 config CHARGER_BQ24735
 	tristate "TI BQ24735 battery charger support"
 	depends on I2C
@@ -507,6 +515,21 @@ config AXP20X_POWER
 	help
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
+	  
+config OPPO_SHORT_C_BATT_CHECK
+	bool "OPPO batt short "
+	help
+	  Say Y here to declare charging system is on MTK
+
+config OPPO_SHORT_HW_CHECK
+	bool "OPPO batt HW short "
+	help
+	  Say Y here to declare charging system is on MTK
+config OPPO_SHORT_IC_CHECK
+	bool "OPPO batt short "
+	help
+	  Say Y here to declare charging system is on MTK
+source "drivers/power/mediatek/Kconfig"
 
 source "drivers/power/reset/Kconfig"
 
